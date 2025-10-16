@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from app.routes import nutricion, payments
+from app.routes import nutricion, payments, entrenamiento
 from fastapi.middleware.cors import CORSMiddleware
 from tortoise.contrib.fastapi import register_tortoise
 from .auth import router as auth_router
@@ -8,7 +8,7 @@ app = FastAPI()
 
 origins = [
     "http://localhost",
-    "http://localhost:5173", # Asegúrate de que este sea el puerto correcto de tu frontend
+    "http://localhost:5173",
     "http://127.0.0.1:5173",
 ]
 
@@ -22,6 +22,8 @@ app.add_middleware(
 
 app.include_router(auth_router, prefix="/auth", tags=["auth"])
 app.include_router(payments.router, prefix="/payments", tags=["payments"])
+app.include_router(entrenamiento.router,
+                   prefix="/entrenamiento", tags=["entrenamiento"])
 
 
 register_tortoise(
@@ -33,6 +35,7 @@ register_tortoise(
 )
 
 app.include_router(nutricion.router)
+
 
 @app.get("/")
 def read_root():
