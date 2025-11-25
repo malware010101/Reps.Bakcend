@@ -6,15 +6,14 @@ import bcrypt
 from jose import jwt, JWTError
 from datetime import datetime, timedelta
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
-from typing import Optional
+from typing import Optional, List
 
 SECRET_KEY = "tu_clave_secreta_super_segura_y_larga"
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 60  # El token expira en 60 minutos
+ACCESS_TOKEN_EXPIRE_MINUTES = 60
 
 # Esquema para obtener el token del encabezado "Authorization: Bearer <token>"
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
-# Asegúrate que tokenUrl coincida con el prefijo de tu router de autenticación
 
 
 router = APIRouter()
@@ -26,31 +25,64 @@ class UserInSchema(BaseModel):
     password: str
     rol: str = "usuario"
 
-    # modelo para la actualización de rol
-
 
 class UpdateUserRoleSchema(BaseModel):
     user_id: int
     rol: str
 
 
+class userSchemaOut(BaseModel):
+    id: int
+    nombre: str
+    rol: str
+
+
+@router.get("/users", response_model=List[userSchemaOut])
+async def get_all_users():
+    users = await User.all()
+    return users
+
+
+def hash_password(password: str) -> str:
+    hashed = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
+    return hashed.decode('utf-8')
+
+
 @router.post("/register", status_code=status.HTTP_201_CREATED)
 async def register_user(user_data: UserInSchema):
-    # Encriptar la contraseña
-    # Esto devuelve un objeto de tipo bytes
-    hashed_password = bcrypt.hashpw(
-        user_data.password.encode('utf-8'), bcrypt.gensalt())
 
-    # Crear el usuario en la base de datos
-    new_user = await User.create(
+    hashed_password = hash_password(user_data.password)
+
+    # Crea el usuario en la db
+    new_user = await register_user_in_db(
         nombre=user_data.nombre,
         email=user_data.email,
-        # Aquí decodificamos el objeto de bytes a una cadena de texto antes de guardarlo
-        password_hash=hashed_password.decode('utf-8'),
+        password_hash=hashed_password,
         rol=user_data.rol
     )
 
+    if not new_user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Error al registrar el usuario en la base de datos"
+        )
+
     return {"message": "Usuario registrado exitosamente", "user_id": new_user.id}
+
+
+async def register_user_in_db(nombre: str, email: str, password_hash: str, rol: str):
+
+    try:
+        new_user = await User.create(
+            nombre=nombre,
+            email=email,
+            password_hash=password_hash,
+            rol=rol
+        )
+        return new_user
+    except Exception as e:
+        print(f"Error al registrar usuario en DB: {e}")
+        return None
 
 
 class LoginSchema(BaseModel):
@@ -102,7 +134,6 @@ async def update_user_role(update_data: UpdateUserRoleSchema):
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Usuario no encontrado"
         )
-# FUNCIÓN AUXILIAR PARA CREAR EL TOKEN
 
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
@@ -116,7 +147,7 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
 
-# FUNCIÓN PARA OBTENER EL USUARIO AUTENTICADO A PARTIR DEL TOKEN
+# obtwngo el usuario autenticado atravez del token
 
 
 async def get_current_user(token: str = Depends(oauth2_scheme)) -> User:

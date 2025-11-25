@@ -3,6 +3,15 @@ from app.routes import nutricion, payments, entrenamiento
 from fastapi.middleware.cors import CORSMiddleware
 from tortoise.contrib.fastapi import register_tortoise
 from .auth import router as auth_router
+import stripe
+import os
+from dotenv import load_dotenv
+
+load_dotenv("venv/.env")
+
+stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
+
+print(f"DEBUG: Stripe Key cargada en main.py: {bool(stripe.api_key)}")
 
 app = FastAPI()
 
@@ -28,7 +37,7 @@ app.include_router(entrenamiento.router,
 
 register_tortoise(
     app,
-    db_url="sqlite://nutri_and_entrena.sqlite",
+    db_url="postgres://reps_user:admin123@localhost:5432/reps_db",
     modules={"models": ["app.models"]},
     generate_schemas=True,
     add_exception_handlers=True,

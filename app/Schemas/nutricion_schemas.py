@@ -13,3 +13,4 @@ class DatosNutricion(BaseModel):
     enfermedades: List[str]
     tipoDieta: str
     alergias: Optional[List[str]] = None
+    comidas: int

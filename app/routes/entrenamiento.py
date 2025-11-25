@@ -17,7 +17,6 @@ async def crear_programa(
 
     current_user: User = Depends(get_current_user)
 ):
-    # Validación de rol: solo 'admin' o 'coach' pueden crear
     if current_user.rol not in ["admin", "coach"]:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
                             detail="Solo administradores y coaches pueden crear programas.")
@@ -45,8 +44,6 @@ async def crear_programa(
         print(f"Error al crear programa: {e}")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                             detail="Error interno al guardar el programa.")
-
-# Endpoint 2: OBTENER todos los programas generales (GET)
 
 
 @router.get("/general", response_model=List[ProgramaOutSchema])

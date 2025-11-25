@@ -1,7 +1,6 @@
-from typing import List, Optional
+from typing import List, Dict
 from tortoise import fields, models
 import json
-from typing import List, Dict
 
 
 class User(models.Model):
@@ -17,15 +16,13 @@ class User(models.Model):
     class Meta:
         table = "users"
 
-        from pydantic import BaseModel
-
 
 class ProgramaEntrenamiento(models.Model):
     id = fields.IntField(pk=True)
     nombre = fields.CharField(max_length=100)
     objetivo = fields.CharField(max_length=50)
     categoria = fields.CharField(max_length=50)
-    nivel = fields.IntField(max_length=20)
+    nivel = fields.IntField()
     duracion_semanas = fields.IntField(default=4)
     dias_entrenamiento = fields.IntField(default=3)
 
@@ -40,7 +37,6 @@ class ProgramaEntrenamiento(models.Model):
         table = "programas_entrenamiento"
 
     def get_dias(self) -> List[Dict]:
-        """Convierte la cadena JSON de vuelta a una lista de diccionarios."""
         if self.dias_json:
             return json.loads(self.dias_json)
         return []
@@ -51,6 +47,3 @@ class ProgramaEntrenamiento(models.Model):
         if 'dias' in kwargs:
             kwargs['dias_json'] = json.dumps(kwargs.pop('dias'))
         return await super().create(**kwargs)
-
-    async def save(self, *args, **kwargs):
-        pass  # Usar el guardado por defecto de Tortoise ORM
