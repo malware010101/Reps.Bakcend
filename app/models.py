@@ -1,6 +1,8 @@
 from typing import List, Dict
 from tortoise import fields, models
+from datetime import timezone
 import json
+# usuarios modelos
 
 
 class User(models.Model):
@@ -47,3 +49,21 @@ class ProgramaEntrenamiento(models.Model):
         if 'dias' in kwargs:
             kwargs['dias_json'] = json.dumps(kwargs.pop('dias'))
         return await super().create(**kwargs)
+
+
+# nutricion Modelos
+class PlanNutricion(models.Model):
+    id = fields.IntField(pk=True)
+    usuario_id = fields.IntField(index=True)
+
+    calorias_diarias = fields.IntField()
+
+    macronutrientes = fields.JSONField()
+    opciones_menu = fields.JSONField()
+    datos_recibidos = fields.JSONField()
+
+    activo = fields.BooleanField(default=True)
+    creado_en = fields.DatetimeField(null=True)
+
+    class Meta:
+        table = "planes_nutricion"
