@@ -14,6 +14,7 @@ class DatosNutricion(BaseModel):
     tipoDieta: str
     alergias: Optional[List[str]] = None
     comidas: int
+    horarioEntrenamiento: str
 
 
 class PlanNutricionCreate(BaseModel):

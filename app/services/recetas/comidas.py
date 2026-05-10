@@ -101,5 +101,106 @@ Comidas = [
             "vegetal": ["Nopales"]
         },
         "descripcion": "Carne molida guisada con nopales, servida con arroz integral."
+    },
+    {
+        "nombre": "Pollo deshebrado con papas y salsa roja",
+        "ingredientes": {
+            "proteina": ["Pechuga de pollo"],
+            "carbohidrato": ["Papas cocidas"],
+            "grasa": ["Aceite de oliva"],
+            "vegetal": ["Jitomate", "Cebolla"]
+        },
+        "descripcion": "Pollo deshebrado guisado en salsa roja con papas cocidas."
+    },
+    {
+        "nombre": "Carne asada con arroz y ensalada",
+        "ingredientes": {
+            "proteina": ["Carne magra"],
+            "carbohidrato": ["Arroz blanco cocido"],
+            "grasa": ["Aceite de oliva"],
+            "vegetal": ["Lechuga", "Jitomate"]
+        },
+        "descripcion": "Carne asada a la plancha acompañada de arroz blanco y ensalada fresca."
+    },
+    {
+        "nombre": "Pechuga de pollo empapelada con verduras",
+        "ingredientes": {
+            "proteina": ["Pechuga de pollo"],
+            "carbohidrato": ["Arroz blanco cocido"],
+            "grasa": ["Aceite de oliva"],
+            "vegetal": ["Calabacita", "Zanahoria", "Cebolla"]
+        },
+        "descripcion": "Pechuga de pollo empapelada con verduras, servida con arroz."
+    },
+    {
+        "nombre": "Pavo guisado con arroz y verduras",
+        "ingredientes": {
+            "proteina": ["Pavo"],
+            "carbohidrato": ["Arroz integral cocido"],
+            "grasa": ["Aceite de oliva"],
+            "vegetal": ["Zanahoria", "Chícharos"]
+        },
+        "descripcion": "Pavo guisado con verduras mixtas acompañado de arroz integral."
+    },
+    {
+        "nombre": "Tinga de pollo con tostadas horneadas",
+        "ingredientes": {
+            "proteina": ["Pechuga de pollo"],
+            "carbohidrato": ["Tostadas horneadas"],
+            "grasa": ["Aceite de oliva"],
+            "vegetal": ["Cebolla", "Jitomate"]
+        },
+        "descripcion": "Tinga de pollo ligera servida sobre tostadas horneadas."
+    },
+    {
+        "nombre": "Carne molida a la mexicana con arroz",
+        "ingredientes": {
+            "proteina": ["Carne magra"],
+            "carbohidrato": ["Arroz blanco cocido"],
+            "grasa": ["Aceite de oliva"],
+            "vegetal": ["Jitomate", "Cebolla", "Chile"]
+        },
+        "descripcion": "Carne molida guisada a la mexicana acompañada de arroz."
+    },
+    {
+        "nombre": "Atún a la mexicana con arroz",
+        "ingredientes": {
+            "proteina": ["Atún en agua"],
+            "carbohidrato": ["Arroz blanco cocido"],
+            "grasa": ["Aceite de oliva"],
+            "vegetal": ["Jitomate", "Cebolla", "Chile"]
+        },
+        "descripcion": "Atún guisado a la mexicana servido con arroz blanco."
+    },
+    {
+        "nombre": "Pollo en salsa de chipotle con arroz",
+        "ingredientes": {
+            "proteina": ["Pechuga de pollo"],
+            "carbohidrato": ["Arroz integral cocido"],
+            "grasa": ["Aceite de oliva"],
+            "vegetal": ["Cebolla"]
+        },
+        "descripcion": "Pollo guisado en salsa de chipotle acompañado de arroz integral."
+    },
+    {
+        "nombre": "Filete de pescado al ajo con papas",
+        "ingredientes": {
+            "proteina": ["Filete de pescado"],
+            "carbohidrato": ["Papas cocidas"],
+            "grasa": ["Aceite de oliva"],
+            "vegetal": ["Espinaca"]
+        },
+        "descripcion": "Filete de pescado al ajo servido con papas cocidas y espinaca."
+    },
+    {
+        "nombre": "Bowl de arroz con pollo y verduras",
+        "ingredientes": {
+            "proteina": ["Pechuga de pollo"],
+            "carbohidrato": ["Arroz blanco cocido"],
+            "grasa": ["Aceite de oliva"],
+            "vegetal": ["Brócoli", "Zanahoria"]
+        },
+        "descripcion": "Bowl de arroz con pollo a la plancha y verduras al vapor."
     }
+
 ]

@@ -44,12 +44,6 @@ catalogo = {
         {"nombre": "Pan integral", "p": 13, "c": 41, "g": 4.2, "kcal": 247},
         {"nombre": "Papas cocidas", "p": 2, "c": 20, "g": 0.1, "kcal": 87},
         {"nombre": "Tortillas de maíz", "p": 5, "c": 45, "g": 2.5, "kcal": 218},
-
-        # frutas
-        {"nombre": "Manzana", "p": 0.3, "c": 14, "g": 0.2, "kcal": 52},
-        {"nombre": "Plátano", "p": 1.3, "c": 27, "g": 0.3, "kcal": 105},
-        {"nombre": "Fresas", "p": 0.8, "c": 8, "g": 0.3, "kcal": 32},
-        {"nombre": "Mango", "p": 0.8, "c": 15, "g": 0.4, "kcal": 60},
     ],
 
     "grasa": [

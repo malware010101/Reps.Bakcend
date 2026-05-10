@@ -1,16 +1,18 @@
+from app import config
 from fastapi import FastAPI
-from app.routes import nutricion, payments, entrenamiento
+from app.routes import nutricion, payments, entrenamiento, videos
 from fastapi.middleware.cors import CORSMiddleware
 from tortoise.contrib.fastapi import register_tortoise
 from .auth import router as auth_router
 import stripe
 import os
-from dotenv import load_dotenv
-
-load_dotenv("venv/.env")
+from app.routes import entrenamiento_historico
+from app.routes import pesajes_historico
+from app.routes import upfiles
+from app.routes import chat
+from app.routes import anamnesis
 
 stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
-
 print(f"DEBUG: Stripe Key cargada en main.py: {bool(stripe.api_key)}")
 
 app = FastAPI()
@@ -33,13 +35,19 @@ app.include_router(auth_router, prefix="/auth", tags=["auth"])
 app.include_router(payments.router, prefix="/payments", tags=["payments"])
 app.include_router(entrenamiento.router,
                    prefix="/entrenamiento", tags=["entrenamiento"])
+app.include_router(entrenamiento_historico.router)
+app.include_router(videos.router)
+app.include_router(pesajes_historico.router)
+app.include_router(upfiles.router)
+app.include_router(chat.router)
+app.include_router(anamnesis.router)
 
 
 register_tortoise(
     app,
     db_url="postgres://reps_user:admin123@localhost:5432/reps_db",
     modules={"models": ["app.models"]},
-    generate_schemas=True,
+    generate_schemas=False,
     add_exception_handlers=True,
 )
 

@@ -40,7 +40,7 @@ Desayunos = [
         "descripcion": "Clásicos huevos a la mexicana preparados con aceite mínimo y acompañados de tortillas de maíz."
     },
     {
-        "nombre": "Avena con manzana y almendras",
+        "nombre": "Yogurt girego con Avena,manzana y almendras",
         "ingredientes": {
             "proteina": ["Yogurt griego"],
             "carbohidrato": ["Avena", "Manzana"],
@@ -70,16 +70,6 @@ Desayunos = [
         "descripcion": "Waffles caseros hechos con avena y claras, servidos con yogurt y fresas."
     },
     {
-        "nombre": "Huevos con arroz y brócoli",
-        "ingredientes": {
-            "proteina": ["Huevo entero"],
-            "carbohidrato": ["Arroz blanco cocido"],
-            "grasa": ["Aceite de oliva"],
-            "vegetal": ["Brócoli"]
-        },
-        "descripcion": "Un desayuno estilo asiático: huevos revueltos sobre arroz y brócoli al vapor."
-    },
-    {
         "nombre": "Tacos de huevo con aguacate",
         "ingredientes": {
             "proteina": ["Huevo entero"],
@@ -98,5 +88,15 @@ Desayunos = [
             "vegetal": []
         },
         "descripcion": "Licuado espeso de energía con yogurt, avena, plátano y un toque de crema de maní."
+    },
+    {
+        "nombre": "Sandwich integral de huevo, aguacate y lechuga",
+        "ingredientes": {
+            "proteina": ["Huevo entero"],
+            "carbohidrato": ["Pan integral"],
+            "grasa": ["Aguacate"],
+            "vegetal": []
+        },
+        "descripcion": "Sandwich de huevo revuelto con aguacate y lechuga fresca."
     }
 ]

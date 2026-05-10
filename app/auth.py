@@ -1,12 +1,13 @@
 from fastapi import APIRouter, HTTPException, status, Depends
 from pydantic import BaseModel, EmailStr
-from .models import User
+from app.models import User
 from tortoise.exceptions import DoesNotExist
 import bcrypt
 from jose import jwt, JWTError
 from datetime import datetime, timedelta
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from typing import Optional, List
+from app.models import Anamnesis
 
 SECRET_KEY = "tu_clave_secreta_super_segura_y_larga"
 ALGORITHM = "HS256"
@@ -41,6 +42,18 @@ class userSchemaOut(BaseModel):
 async def get_all_users():
     users = await User.all()
     return users
+
+
+@router.get("/users/{user_id}", response_model=userSchemaOut)
+async def get_user_by_id(user_id: int):
+    try:
+        user = await User.get(id=user_id)
+        return user
+    except DoesNotExist:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Usuario no encontrado"
+        )
 
 
 def hash_password(password: str) -> str:
@@ -107,6 +120,8 @@ async def login_user(login_data: LoginSchema):
             detail="Credenciales incorrectas"
         )
 
+    tiene_anamnesis = await Anamnesis.get_or_none(usuario=user) is not None
+
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
         data={"sub": str(user.id), "rol": user.rol},
@@ -118,7 +133,8 @@ async def login_user(login_data: LoginSchema):
         "token_type": "bearer",
         "user_id": user.id,
         "nombre": user.nombre,
-        "rol": user.rol
+        "rol": user.rol,
+        "tiene_anamnesis": tiene_anamnesis
     }
 
 
@@ -172,3 +188,17 @@ async def get_current_user(token: str = Depends(oauth2_scheme)) -> User:
         raise credentials_exception
 
     return user
+
+
+@router.get("/me")
+async def obtener_usuario_actual(
+    current_user: User = Depends(get_current_user)
+):
+    tiene_anamnesis = await Anamnesis.get_or_none(usuario=current_user) is not None
+
+    return {
+        "id": current_user.id,
+        "nombre": current_user.nombre,
+        "rol": current_user.rol,
+        "tiene_anamnesis": tiene_anamnesis
+    }

@@ -1,8 +1,15 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, status, Depends
 from app.Schemas.nutricion_schemas import DatosNutricion, PlanNutricionCreate
 from app.services import nutricion as nutricion_service
-from app.models import PlanNutricion
+from app.models import PlanNutricion, User
+from app.services.menu_base import generar_menu_base
+from app.services.resolver_menu import resolver_menu
+from app.services.nutricion import generar_porcentajes
+from app.auth import get_current_user
+from tortoise.exceptions import DoesNotExist
+
 import json
+from datetime import datetime, timedelta, timezone
 
 router = APIRouter()
 
@@ -23,29 +30,39 @@ async def generar_plan(data: DatosNutricion):
         nivel_actividad=data.nivelActividad
     )
 
-    # Distribuir los fokin MACROS
-    macros = nutricion_service.distribuir_macros(
+    resultado = nutricion_service.distribuir_macros(
         get=get,
         objetivo=data.objetivo,
-        peso=data.peso
+        peso=data.peso,
+        enfermedades=data.enfermedades,
+        nivel_actividad=data.nivelActividad,
+        genero=data.genero
     )
 
+    macros = resultado["macros"]
+    calorias_finales = resultado["calorias_finales"]
+
     # Generar el fokin menu
-    menu1 = await nutricion_service.generar_menu(macros=macros, comidas=data.comidas, tipoDieta=data.tipoDieta)
-    menu2 = await nutricion_service.generar_menu(macros=macros, comidas=data.comidas, tipoDieta=data.tipoDieta)
-    menu3 = await nutricion_service.generar_menu(macros=macros, comidas=data.comidas, tipoDieta=data.tipoDieta)
+    menus_base = generar_menu_base(objetivo=data.objetivo)
+    distribucion = generar_porcentajes(data.comidas, data.enfermedades)
+    menus_resueltos = resolver_menu(
+        menus_base=menus_base,
+        macros_diarios=macros,
+        distribucion=distribucion
+    )
 
     # los fokin resultados pa ponerte bien modo Dios griego/a
     return {
-        "calorias_diarias": get,
+        "calorias_diarias": calorias_finales,
         "macronutrientes": macros,
         "opciones_menu": [
-            {"opcion": 1, "menu": menu1},
-            {"opcion": 2, "menu": menu2},
-            {"opcion": 3, "menu": menu3},
+            {"opcion": 1, "menu": menus_resueltos["menu_1"]},
+            {"opcion": 2, "menu": menus_resueltos["menu_2"]},
+            {"opcion": 3, "menu": menus_resueltos["menu_3"]},
         ],
         "datos_recibidos": data.model_dump()
     }
+
 # endpoint para guardar el plan
 
 
@@ -58,33 +75,67 @@ async def guardar_plan(plan: PlanNutricionCreate):
         activo=True
     ).update(activo=False)
 
+    # Fechas del nuevo plan
+    ahora = datetime.now(timezone.utc)
+    fecha_fin = ahora + timedelta(days=29)
+
     nuevo_plan = await PlanNutricion.create(
         usuario_id=plan.usuario_id,
         calorias_diarias=plan.calorias_diarias,
         macronutrientes=plan.macronutrientes,
         opciones_menu=plan.opciones_menu,
         datos_recibidos=plan.datos_recibidos,
-        activo=True
+
+        activo=True,
+        estado="activo",
+        fecha_inicio=ahora,
+        fecha_fin=fecha_fin
     )
 
     return {
         "mensaje": "Plan nutricional guardado correctamente",
-        "plan_id": nuevo_plan.id
+        "plan_id": nuevo_plan.id,
+        "fecha_inicio": ahora.isoformat(),
+        "fecha_fin": fecha_fin.isoformat(),
+        "estado": "activo"
     }
 
 # endpint para obtener el plan
 
 
 @router.get("/nutricion/plan/activo/{usuario_id}")
-async def obtener_plan_activo(usuario_id: int):
-    # Busca el plan activo del usuario
-    plan = await PlanNutricion.filter(usuario_id=usuario_id, activo=True).first()
+async def obtener_plan_activo(
+    usuario_id: int,
+    current_user: User = Depends(get_current_user)
+):
+    # Solo puede ver
+    # - Su propio plan
+    # - Admin
+    # - Coach
+
+    if current_user.rol not in ["admin", "coach"] and current_user.id != usuario_id:
+        raise HTTPException(
+            status_code=403,
+            detail="No tienes permiso para ver este plan nutricional"
+        )
+
+    plan = await PlanNutricion.filter(
+        usuario_id=usuario_id,
+        activo=True
+    ).first()
 
     if not plan:
         raise HTTPException(
-            status_code=404, detail="No cuentas con un plan nutricional activo, solicita un plan.")
+            status_code=404,
+            detail="No cuentas con un plan nutricional activo, solicita un plan."
+        )
 
-    # Construir respuesta segura (convertir created datetime si existe)
+    ahora = datetime.now(timezone.utc)
+
+    estado_calculado = plan.estado
+    if plan.fecha_fin and ahora > plan.fecha_fin:
+        estado_calculado = "vencido"
+
     creado_en = None
     if getattr(plan, "creado_en", None):
         try:
@@ -100,5 +151,8 @@ async def obtener_plan_activo(usuario_id: int):
         "opciones_menu": plan.opciones_menu,
         "datos_recibidos": plan.datos_recibidos,
         "creado_en": creado_en,
+        "fecha_inicio": plan.fecha_inicio.isoformat() if plan.fecha_inicio else None,
+        "fecha_fin": plan.fecha_fin.isoformat() if plan.fecha_fin else None,
+        "estado": estado_calculado,
         "activo": plan.activo
     }
