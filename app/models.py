@@ -13,6 +13,16 @@ class User(models.Model):
     password_hash = fields.CharField(max_length=100)
     rol = fields.CharField(max_length=20)
 
+    # ==========================
+    # Membresía
+    # ==========================
+    # trial | standard | platinum | gold | diamond
+    membresia_plan = fields.CharField(max_length=20, null=True)
+    membresia_inicio = fields.DatetimeField(null=True)
+    membresia_fin = fields.DatetimeField(null=True)
+    membresia_estado = fields.CharField(
+        max_length=20, null=True)  # activa | vencida | cancelada
+
     def __str__(self):
         return self.nombre
 
@@ -28,7 +38,7 @@ class ProgramaEntrenamiento(models.Model):
     nivel = fields.IntField()
     duracion_semanas = fields.IntField(default=4)
     dias_entrenamiento = fields.IntField(default=3)
-    tipo = fields.CharField(max_length=20, default='base')
+    tipo = fields.CharField(max_length=50, default='base')
 
     dias_json = fields.TextField()
 
@@ -89,7 +99,7 @@ class EntrenamientoActivo(models.Model):
         related_name="entrenamientos_asignados",
         on_delete=fields.CASCADE
     )
-    tipo = fields.CharField(max_length=20)
+    tipo = fields.CharField(max_length=50)
 
     fecha_inicio = fields.DatetimeField(null=True)
     fecha_fin = fields.DatetimeField(null=True)
@@ -140,8 +150,13 @@ class PesajeHistorico(models.Model):
     )
 
     peso_kg = fields.FloatField()
+
     grasa_pct = fields.FloatField(null=True)
+    grasa_kg = fields.FloatField(null=True)
+
+    masa_muscular_pct = fields.FloatField(null=True)
     masa_muscular_kg = fields.FloatField(null=True)
+
     imc = fields.FloatField(null=True)
 
     foto_frontal_url = fields.TextField(null=True)

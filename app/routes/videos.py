@@ -15,9 +15,6 @@ router = APIRouter(
 BUNNY_LIBRARY_ID = os.getenv("BUNNY_LIBRARY_ID")
 BUNNY_STREAM_TOKEN = os.getenv("BUNNY_STREAM_TOKEN")
 
-print("BUNNY_LIBRARY_ID:", BUNNY_LIBRARY_ID)
-print("BUNNY_STREAM_TOKEN:", BUNNY_STREAM_TOKEN)
-
 
 def generar_bunny_stream_token(video_id: str, expires: int) -> str:
 
@@ -39,6 +36,7 @@ async def obtener_stream_video(
         f"?token={token}&expires={expires}"
         f"&autoplay=true"
         f"&loop=true"
+        f"&muted=true"
     )
 
     return {

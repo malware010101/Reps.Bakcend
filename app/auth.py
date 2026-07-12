@@ -8,10 +8,22 @@ from datetime import datetime, timedelta
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from typing import Optional, List
 from app.models import Anamnesis
+from app.services.memberships.service import dias_restantes, obtener_datos_membresia, duracion_plan
+from app.services.memberships.validator import actualizar_estado_si_vencio
+from app.services.memberships.service import asignar_membresia
+import os
+from dotenv import load_dotenv
 
-SECRET_KEY = "tu_clave_secreta_super_segura_y_larga"
-ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 60
+load_dotenv()
+
+SECRET_KEY = os.getenv("SECRET_KEY")
+if not SECRET_KEY:
+    raise RuntimeError("SECRET_KEY no encontrada en variables de entorno")
+
+ALGORITHM = os.getenv("ALGORITHM", "HS256")
+ACCESS_TOKEN_EXPIRE_MINUTES = int(
+    os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", 1440)
+)
 
 # Esquema para obtener el token del encabezado "Authorization: Bearer <token>"
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
@@ -25,6 +37,7 @@ class UserInSchema(BaseModel):
     email: EmailStr
     password: str
     rol: str = "usuario"
+    membresia_plan: str = "standard"
 
 
 class UpdateUserRoleSchema(BaseModel):
@@ -37,18 +50,66 @@ class userSchemaOut(BaseModel):
     nombre: str
     rol: str
 
+    membresia_plan: str | None
+    membresia_estado: str | None
+    membresia_inicio: datetime | None
+    membresia_fin: datetime | None
+
+    duracion_plan: int
+    dias_restantes: int
+
+
+class RenovarMembresiaSchema(BaseModel):
+    user_id: int
+    membresia_plan: str
+
 
 @router.get("/users", response_model=List[userSchemaOut])
 async def get_all_users():
+
     users = await User.all()
-    return users
+
+    response = []
+
+    for user in users:
+        await actualizar_estado_si_vencio(user)
+
+        response.append({
+            "id": user.id,
+            "nombre": user.nombre,
+            "rol": user.rol,
+            "membresia_plan": user.membresia_plan,
+            "membresia_estado": user.membresia_estado,
+            "membresia_inicio": user.membresia_inicio,
+            "membresia_fin": user.membresia_fin,
+
+            "duracion_plan": duracion_plan(user.membresia_plan),
+            "dias_restantes": dias_restantes(user.membresia_fin)
+        })
+    return response
 
 
 @router.get("/users/{user_id}", response_model=userSchemaOut)
 async def get_user_by_id(user_id: int):
+
     try:
         user = await User.get(id=user_id)
-        return user
+
+        await actualizar_estado_si_vencio(user)
+
+        return {
+            "id": user.id,
+            "nombre": user.nombre,
+            "rol": user.rol,
+            "membresia_plan": user.membresia_plan,
+            "membresia_estado": user.membresia_estado,
+            "membresia_inicio": user.membresia_inicio,
+            "membresia_fin": user.membresia_fin,
+
+            "duracion_plan": duracion_plan(user.membresia_plan),
+            "dias_restantes": dias_restantes(user.membresia_fin)
+        }
+
     except DoesNotExist:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -65,13 +126,18 @@ def hash_password(password: str) -> str:
 async def register_user(user_data: UserInSchema):
 
     hashed_password = hash_password(user_data.password)
+    datos_membresia = obtener_datos_membresia(
+        rol=user_data.rol,
+        plan=user_data.membresia_plan
+    )
 
     # Crea el usuario en la db
     new_user = await register_user_in_db(
         nombre=user_data.nombre,
         email=user_data.email,
         password_hash=hashed_password,
-        rol=user_data.rol
+        rol=user_data.rol,
+        **datos_membresia
     )
 
     if not new_user:
@@ -83,14 +149,18 @@ async def register_user(user_data: UserInSchema):
     return {"message": "Usuario registrado exitosamente", "user_id": new_user.id}
 
 
-async def register_user_in_db(nombre: str, email: str, password_hash: str, rol: str):
+async def register_user_in_db(nombre: str, email: str, password_hash: str, rol: str, membresia_plan: str | None, membresia_inicio: datetime | None, membresia_fin: datetime | None, membresia_estado: str | None):
 
     try:
         new_user = await User.create(
             nombre=nombre,
             email=email,
             password_hash=password_hash,
-            rol=rol
+            rol=rol,
+            membresia_plan=membresia_plan,
+            membresia_inicio=membresia_inicio,
+            membresia_fin=membresia_fin,
+            membresia_estado=membresia_estado
         )
         return new_user
     except Exception as e:
@@ -107,6 +177,7 @@ class LoginSchema(BaseModel):
 async def login_user(login_data: LoginSchema):
     try:
         user = await User.get(email=login_data.email)
+        await actualizar_estado_si_vencio(user)
     except DoesNotExist:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -134,6 +205,14 @@ async def login_user(login_data: LoginSchema):
         "user_id": user.id,
         "nombre": user.nombre,
         "rol": user.rol,
+        "membresia_plan": user.membresia_plan,
+        "membresia_inicio": user.membresia_inicio,
+        "membresia_fin": user.membresia_fin,
+        "membresia_estado": user.membresia_estado,
+
+        "duracion_plan": duracion_plan(user.membresia_plan),
+        "dias_restantes": dias_restantes(user.membresia_fin),
+
         "tiene_anamnesis": tiene_anamnesis
     }
 
@@ -195,10 +274,61 @@ async def obtener_usuario_actual(
     current_user: User = Depends(get_current_user)
 ):
     tiene_anamnesis = await Anamnesis.get_or_none(usuario=current_user) is not None
+    await actualizar_estado_si_vencio(current_user)
 
     return {
         "id": current_user.id,
         "nombre": current_user.nombre,
         "rol": current_user.rol,
+        "membresia_plan": current_user.membresia_plan,
+        "membresia_inicio": current_user.membresia_inicio,
+        "membresia_fin": current_user.membresia_fin,
+        "membresia_estado": current_user.membresia_estado,
+
+        "duracion_plan": duracion_plan(current_user.membresia_plan),
+        "dias_restantes": dias_restantes(current_user.membresia_fin),
+
         "tiene_anamnesis": tiene_anamnesis
+    }
+
+
+@router.put("/renovar-membresia", status_code=status.HTTP_200_OK)
+async def renovar_membresia(data: RenovarMembresiaSchema, current_user: User = Depends(get_current_user)):
+
+    if current_user.rol not in ("admin", "coach"):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="No tienes permisos para renovar membresías."
+        )
+    user = await User.get_or_none(id=data.user_id)
+
+    if not user:
+        raise HTTPException(
+            status_code=404,
+            detail="Usuario no encontrado"
+        )
+
+    if user.rol in ("admin", "coach"):
+        raise HTTPException(
+            status_code=400,
+            detail="Este usuario no maneja membresías"
+        )
+
+    try:
+        datos = asignar_membresia(data.membresia_plan)
+    except ValueError as e:
+        raise HTTPException(
+            status_code=400,
+            detail=str(e)
+        )
+
+    user.membresia_plan = datos["membresia_plan"]
+    user.membresia_inicio = datos["membresia_inicio"]
+    user.membresia_fin = datos["membresia_fin"]
+    user.membresia_estado = datos["membresia_estado"]
+
+    await user.save()
+
+    return {
+        "message": "Membresía renovada correctamente"
     }

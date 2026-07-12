@@ -1,57 +1,48 @@
-from fastapi import APIRouter, UploadFile, File, HTTPException, Depends
-import httpx
-import os
-import uuid
+from fastapi import APIRouter, UploadFile, File, Depends
+from datetime import datetime
+import asyncio
+
 from app.auth import get_current_user
 from app.models import User
+from app.services.bunny_storage import upload_img
 
 router = APIRouter(
     prefix="/upfiles",
     tags=["upfiles"]
 )
 
-BUNNY_STORAGE_ZONE = os.getenv("BUNNY_STORAGE_ZONE")
-BUNNY_STORAGE_ACCESS_KEY = os.getenv("BUNNY_STORAGE_ACCESS_KEY")
-BUNNY_STORAGE_REGION = os.getenv("BUNNY_STORAGE_REGION")
 
-
-@router.post("/image")
-async def upload_image(
-    file: UploadFile = File(...),
-    current_user: User = Depends(get_current_user)
+@router.post("/pesajes")
+async def upload_pesaje_images(
+    foto_frontal: UploadFile | None = File(None),
+    foto_izquierda: UploadFile | None = File(None),
+    foto_derecha: UploadFile | None = File(None),
+    foto_trasera: UploadFile | None = File(None),
+    current_user: User = Depends(get_current_user),
 ):
 
-    try:
-        file_bytes = await file.read()
+    folder = datetime.now().strftime("%Y/%m/%d/%H-%M-%S")
+    path = f"users/{current_user.id}/pesajes/{folder}"
 
-        # Nombre único
-        unique_filename = f"{uuid.uuid4()}_{file.filename}"
+    tasks = {}
 
-        # Carpeta por usuario
-        path = f"users/{current_user.id}/pesajes/{unique_filename}"
+    if foto_frontal:
+        tasks["foto_frontal_url"] = upload_img(foto_frontal, path)
 
-        upload_url = f"https://{BUNNY_STORAGE_REGION}/{BUNNY_STORAGE_ZONE}/{path}"
+    if foto_izquierda:
+        tasks["foto_izquierda_url"] = upload_img(foto_izquierda, path)
 
-        headers = {
-            "AccessKey": BUNNY_STORAGE_ACCESS_KEY,
-            "Content-Type": file.content_type
-        }
+    if foto_derecha:
+        tasks["foto_derecha_url"] = upload_img(foto_derecha, path)
 
-        async with httpx.AsyncClient() as client:
-            response = await client.put(
-                upload_url,
-                content=file_bytes,
-                headers=headers
-            )
+    if foto_trasera:
+        tasks["foto_trasera_url"] = upload_img(foto_trasera, path)
 
-        if response.status_code != 201:
-            raise HTTPException(
-                status_code=400, detail="Error subiendo imagen a Bunny")
+    results = await asyncio.gather(*tasks.values())
 
-        # URL pública CDN
-        public_url = f"https://{BUNNY_STORAGE_ZONE}.b-cdn.net/{path}"
+    response = {
+        key: url
+        for key, url in zip(tasks.keys(), results)
+    }
 
-        return {"url": public_url}
-
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    return response

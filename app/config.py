@@ -1,6 +1,12 @@
 # app/config.py
-import os
+from pathlib import Path
 from dotenv import load_dotenv
 
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-load_dotenv(os.path.join(BASE_DIR, "venv/.env"))
+BASE_DIR = Path(__file__).resolve().parent.parent
+
+env_path = BASE_DIR / "venv" / ".env"
+
+if env_path.exists():
+    load_dotenv(env_path)
+else:
+    load_dotenv()

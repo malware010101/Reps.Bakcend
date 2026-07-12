@@ -6,14 +6,16 @@ from tortoise.contrib.fastapi import register_tortoise
 from .auth import router as auth_router
 import stripe
 import os
+from dotenv import load_dotenv
 from app.routes import entrenamiento_historico
 from app.routes import pesajes_historico
 from app.routes import upfiles
 from app.routes import chat
 from app.routes import anamnesis
 
+load_dotenv()
+
 stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
-print(f"DEBUG: Stripe Key cargada en main.py: {bool(stripe.api_key)}")
 
 app = FastAPI()
 
@@ -22,6 +24,10 @@ origins = [
     "http://localhost:5173",
     "http://127.0.0.1:5173",
 ]
+for env_name in ("FRONTEND_URL", "FRONTEND_URL_WWW"):
+    url = os.getenv(env_name)
+    if url and url not in origins:
+        origins.append(url)
 
 app.add_middleware(
     CORSMiddleware,
@@ -45,7 +51,7 @@ app.include_router(anamnesis.router)
 
 register_tortoise(
     app,
-    db_url="postgres://reps_user:admin123@localhost:5432/reps_db",
+    db_url=os.getenv("db_url"),
     modules={"models": ["app.models"]},
     generate_schemas=False,
     add_exception_handlers=True,
