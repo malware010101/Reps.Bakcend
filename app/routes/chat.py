@@ -135,10 +135,7 @@ async def obtener_mi_chat(
     chat = await Chat.filter(usuario_id=current_user.id).first()
 
     if not chat:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="No tienes chat asignado"
-        )
+        chat = await Chat.create(usuario=current_user)
 
     return ChatOutSchema(
         id=chat.id,
